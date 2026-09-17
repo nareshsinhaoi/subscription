@@ -1,0 +1,76 @@
+F6EAD85B19CF438DD0B25AA0E8B52B58
+
+
+CCAVENUE_MERCHANT_ID=326
+CCAVENUE_ACCESS_CODE=AVAQ00BL12AJ89QAJA
+CCAVENUE_WORKING_KEY=237FE18D010325BA33E1C17E870CC588
+
+AVAQ00BL12AJ89QAJA
+237FE18D010325BA33E1C17E870CC588
+
+URL:http://www.outlookindia.com
+access_code:	OWBDYU8XPHORALAV	 
+Working key:	F6EAD85B19CF438DD0B25AA0E8B52B58	
+
+URL:http://www.subscription.outlookindia.com
+access_code:	AVGX03BK38CG93XGGC	 
+Working key:	D6DD18FD24CFFAD6FF1264FEC2AC07A7	
+
+URL:https://www.secure.ccavenue.com
+access_code:	AVVA01BF65AG82AVGA
+Working key:	6CC8A8F1C897C3292B2D8D77D418ABCF
+
+ 
+Sandbox Mode: Use test credentials with https://test.ccavenue.com/transaction/transaction.do?command=initiateTransaction
+
+But i do not have "access_code" & "Working key" for test/Sandbox Mode
+
+CCAVENUE_MERCHANT_ID=326
+CCAVENUE_ACCESS_CODE
+CCAVENUE_WORKING_KEY
+
+laxmi.singh@outlookindia.com
+L@xmISingh
+
+Apple console
+suvidhaaye@gmail.com
+L@xmI#Singh`12
+
+
+npm install -g npm@12.0.2
+
+npm i paytmchecksum
+npm i node-ccavenue
+npm i @phonepe-pg/pg-sdk-node
+
+------------------------------------
+CCAvenue:
+Card Number: 	4916 2246 0101 1119
+Expiry: 		Any future date
+CVV: 			Any 3 digits
+------------------------------------
+PAYTM STAGING: 
+Card: 			4111111111111111 
+/ any expiry / any CVV / 
+OTP:			489871
+------------------------------------
+Merchant ID: 	PGTESTPAYUAT86
+Salt Key: 		96434309-7796-489d-8924-ab56988a6076
+Salt Index: 	1
+------------------------------------
+PHONEPE::::
+Card Number:	4208585190116667
+Card Type: 		CREDIT_CARD
+Issuer: 		VISA
+Expiry: 		06 27
+CVV: 			508
+nareshsinha@proton.me
+------------------------------------
+node --env-file=.env .output/server/index.mjs <this_works>
+------------------------------------
+
+node --env-file=.env .output/server/index.mjs
+npm run build node .output/server/index.mjs
+
+npx nitro dev --prebuilt
+npx wrangler dev --config .output/server/wrangler.json
