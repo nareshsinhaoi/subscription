@@ -1,15 +1,29 @@
+/**
+ * Requires from "@/lib/subscription-data":
+ *   RATE_CARD, PRINT_MAGAZINES, DIGITAL_MAGAZINES,
+ *   MAG_IMG_FALLBACK, BANNERS_FALLBACK,
+ *   coverKeyForCode(code) -> "oli" | "olm" | "olt" | "olb" | "olh",
+ *   fetchMagazineAssets() -> Promise<{ MAG_IMG: MagCovers; BANNERS: Banners }>
+ * Types: Magazine, PlanKey, MagCovers, Banners
+ */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { SiteHeader } from "@/components/SiteHeader";
 import {
-  BANNERS,
+  BANNERS_FALLBACK,
   DIGITAL_MAGAZINES,
+  MAG_IMG_FALLBACK,
   PRINT_MAGAZINES,
   RATE_CARD,
+  coverKeyForCode,
+  fetchMagazineAssets,
+  type Banners,
+  type MagCovers,
   type Magazine,
   type PlanKey,
 } from "@/lib/subscription-data";
+
 import { saveDraft } from "@/lib/order-store";
 
 export const Route = createFileRoute("/bundle-subscription")({
@@ -30,13 +44,6 @@ export const Route = createFileRoute("/bundle-subscription")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  /**
-   * Reads the sales executive code from the URL query string.
-   * Falls back to the ADMIN code if not supplied.
-   *
-   *   ?source=WHF1098031  → sales exec code
-   *   (no source)         → DELH100030 (admin)
-   */
   validateSearch: (search: Record<string, unknown>) => {
     const raw = search.source;
     const source =
@@ -68,12 +75,30 @@ function BundleSubscription() {
   const [digitalPick, setDigitalPick] = useState<Picked>(() => initPicked(DIGITAL_MAGAZINES));
   const [error, setError] = useState(false);
 
+  const [covers, setCovers] = useState<MagCovers>(MAG_IMG_FALLBACK);
+  const [banners, setBanners] = useState<Banners>(BANNERS_FALLBACK);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const assets = await fetchMagazineAssets();
+      console.log("Fetched magazine assets:", assets);
+      
+      if (cancelled) return;
+      setCovers(assets.MAG_IMG);
+      setBanners(assets.BANNERS);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  //console.log( "BundleSubscription: covers:", covers, "banners:", banners);
   const banner =
     tab === "print"
-      ? { d: BANNERS.printDesktop, m: BANNERS.printMobile }
+      ? { d: banners.printDesktop, m: banners.printMobile }
       : tab === "digital"
-        ? { d: BANNERS.digitalDesktop, m: BANNERS.digitalMobile }
-        : { d: BANNERS.limitedDesktop, m: BANNERS.limitedMobile };
+        ? { d: banners.digitalDesktop, m: banners.digitalMobile }
+        : { d: banners.limitedDesktop, m: banners.limitedMobile };
 
   const list = tab === "print" ? PRINT_MAGAZINES : DIGITAL_MAGAZINES;
   const pick = tab === "print" ? printPick : digitalPick;
@@ -146,9 +171,6 @@ function BundleSubscription() {
       dura = `${chosen[0]?.options.find((o) => o.duration === pick[chosen[0]!.key]!.duration)?.duration ?? 1}yr`;
     }
 
-    // Append the sales executive code (or ADMIN fallback) to the mag field.
-    //   With source:    OL-TEO-KJ-IND-WHF1098031
-    //   Without source: OL-TEO-KJ-IND-DELH100030
     const mag = `OL-TEO-KJ-IND-${source}`;
 
     saveDraft({
@@ -247,7 +269,11 @@ function BundleSubscription() {
                   onClick={() => setLimitedSelected(true)}
                 >
                   <div className="image-container">
-                    <img src={m.img} alt={m.name} className="mag-image" />
+                    <img
+                      src={covers[coverKeyForCode(code)]}
+                      alt={m.name}
+                      className="mag-image"
+                    />
                     <span className="offer-tag">{RATE_CARD[plan].duration}</span>
                   </div>
                   <div className="content">
@@ -272,7 +298,11 @@ function BundleSubscription() {
                 const opt = m.options.find((o) => o.duration === sel.duration)!;
                 return (
                   <div key={m.key} className={`magazine-card ${sel.checked ? "selected" : ""}`}>
-                    <img src={m.img} alt={m.name} className="magazine-image" />
+                    <img
+                      src={covers[coverKeyForCode(m.code)]}
+                      alt={m.name}
+                      className="magazine-image"
+                    />
                     <div className="magazine-info">
                       <div className="magazine-name">{m.name}</div>
                       <div className="magazine-details">{m.details}</div>
