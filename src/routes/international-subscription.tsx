@@ -1,14 +1,30 @@
+/**
+ * Requires from "@/lib/subscription-data":
+ *   INTL_MAGAZINES, SUPPORTED_CURRENCIES,
+ *   MAG_IMG_FALLBACK, BANNERS_FALLBACK,
+ *   coverKeyForCode(code) -> "oli" | "olm" | "olt" | "olb" | "olh",
+ *   fetchMagazineAssets() -> Promise<{ MAG_IMG: MagCovers; BANNERS: Banners }>,
+ *   fetchExchangeRates() -> Promise<Record<string, number>>,
+ *   convertWithRates(amountINR, currency, rates) -> number
+ * Types: MagCovers, Banners
+ */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
 import { SiteHeader } from "@/components/SiteHeader";
 import {
-  BANNERS,
+  BANNERS_FALLBACK,
   INTL_MAGAZINES,
+  MAG_IMG_FALLBACK,
   SUPPORTED_CURRENCIES,
   convertWithRates,
+  coverKeyForCode,
   fetchExchangeRates,
+  fetchMagazineAssets,
+  type Banners,
+  type MagCovers,
 } from "@/lib/subscription-data";
+
 import { saveDraft } from "@/lib/order-store";
 
 export const Route = createFileRoute("/international-subscription")({
@@ -32,12 +48,6 @@ export const Route = createFileRoute("/international-subscription")({
   component: InternationalSubscription,
 });
 
-/**
- * Edition codes:
- *   "1P"   → 1 Year, Print Edition
- *   "1D"   → 1 Year, Digital (e-Mag) Edition
- *   "2D"   → 2 Years, Digital (e-Mag) Edition
- */
 type EditionCode = "1P" | "1D" | "2D";
 type Duration = 1 | 2;
 
@@ -63,17 +73,23 @@ function InternationalSubscription() {
   const [error, setError] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
 
-  /** Live exchange rates (base INR). Falls back to safe defaults. */
   const [rates, setRates] = useState<Record<string, number>>({ INR: 1 });
   const [ratesLoaded, setRatesLoaded] = useState(false);
+
+  const [covers, setCovers] = useState<MagCovers>(MAG_IMG_FALLBACK);
+  const [banners, setBanners] = useState<Banners>(BANNERS_FALLBACK);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const r = await fetchExchangeRates();
+      const [r, assets] = await Promise.all([
+        fetchExchangeRates(),
+        fetchMagazineAssets(),
+      ]);
       if (cancelled) return;
       setRates(r);
-      console.log("Exchange rates loaded:", r);
+      setCovers(assets.MAG_IMG);
+      setBanners(assets.BANNERS);
       setRatesLoaded(true);
     })();
     return () => {
@@ -84,7 +100,6 @@ function InternationalSubscription() {
   const symbol = SUPPORTED_CURRENCIES[currency]!.symbol;
   const locale = SUPPORTED_CURRENCIES[currency]!.locale;
 
-  /** Base INR price for a given edition code. */
   const basePriceOf = (
     mag: (typeof INTL_MAGAZINES)[number],
     edition: EditionCode,
@@ -94,13 +109,11 @@ function InternationalSubscription() {
     return mag.digital2;
   };
 
-  /** Converted price for the current currency using live rates. */
   const priceOf = (
     mag: (typeof INTL_MAGAZINES)[number],
     edition: EditionCode,
   ) => convertWithRates(basePriceOf(mag, edition), currency, rates);
 
-  /** Total per magazine (sum of selected editions). */
   const magazineTotal = (mag: (typeof INTL_MAGAZINES)[number]) => {
     const sel = picked[mag.key];
     if (!sel) return 0;
@@ -137,7 +150,7 @@ function InternationalSubscription() {
     setError(false);
     setPicked((prev) => ({
       ...prev,
-      [magKey]: { duration, editions: [] }, // reset editions on duration change
+      [magKey]: { duration, editions: [] },
     }));
   }
 
@@ -213,10 +226,10 @@ function InternationalSubscription() {
       <div className="ol-container">
         <div className="banner-container1">
           <div className="subdsk-img">
-            <img src={BANNERS.digitalDesktop} alt="Outlook international subscription" />
+            <img src={banners.digitalDesktop} alt="Outlook international subscription" />
           </div>
           <div className="submob-img">
-            <img src={BANNERS.digitalMobile} alt="Outlook international subscription" />
+            <img src={banners.digitalMobile} alt="Outlook international subscription" />
           </div>
         </div>
 
@@ -244,7 +257,6 @@ function InternationalSubscription() {
             </select>
           </label>
 
-          {/* Optional: show when live rates are loading */}
           {!ratesLoaded && (
             <p
               className="scroll-hint"
@@ -268,8 +280,7 @@ function InternationalSubscription() {
             const cardSelected = sel.editions.length > 0;
             const flashing = flash === mag.key;
 
-            /** Precompute which edition rows to show for this card. */
-            const show1P = !durationSelected || isOneYear; // visible before pick, or when 1Y
+            const show1P = !durationSelected || isOneYear;
             const show1D = !durationSelected || isOneYear;
             const show2D = isTwoYear;
 
@@ -278,13 +289,16 @@ function InternationalSubscription() {
                 key={mag.key}
                 className={`magazine-card ${cardSelected ? "selected" : ""}`}
               >
-                <img src={mag.img} alt={mag.name} className="magazine-image" />
+                <img
+                  src={covers[coverKeyForCode(mag.code)]}
+                  alt={mag.name}
+                  className="magazine-image"
+                />
                 <div className="magazine-info">
                   <div className="magazine-name">{mag.name}</div>
                   <div className="magazine-details">{mag.details}</div>
                 </div>
 
-                {/* Duration dropdown */}
                 <select
                   className="duration-select"
                   data-magazine={mag.key}
@@ -304,9 +318,7 @@ function InternationalSubscription() {
                   <option value="2">2 Years</option>
                 </select>
 
-                {/* Edition options — rows are hidden (display:none) when not applicable */}
                 <div className="edition-options">
-                  {/* PRINT EDITION (1 Year) */}
                   <label
                     className={`edition-option ${
                       show1P ? "" : "edition-option--hidden"
@@ -334,7 +346,6 @@ function InternationalSubscription() {
                     </span>
                   </label>
 
-                  {/* E-MAG EDITION (1 Year) */}
                   <label
                     className={`edition-option ${
                       show1D ? "" : "edition-option--hidden"
@@ -362,7 +373,6 @@ function InternationalSubscription() {
                     </span>
                   </label>
 
-                  {/* E-MAG EDITION (2 Years) */}
                   <label
                     className={`edition-option ${
                       show2D ? "" : "edition-option--hidden"
