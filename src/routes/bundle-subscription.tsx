@@ -47,7 +47,7 @@ export const Route = createFileRoute("/bundle-subscription")({
   validateSearch: (search: Record<string, unknown>) => {
     const raw = search.source;
     const source =
-      typeof raw === "string" && raw.trim() ? raw.trim() : "DELH100030";
+      typeof raw === "string" && raw.trim() ? raw.trim() : "BANG147070";
     return { source };
   },
   component: BundleSubscription,
@@ -63,6 +63,53 @@ function initPicked(list: Magazine[]): Picked {
 }
 
 const inr = (n: number) => `₹ ${n.toLocaleString("en-IN")}`;
+function digitalGiftValue(totalPay: number): number {
+  if (totalPay >= 7499) return 750;
+  if (totalPay >= 4999) return 500;
+  if (totalPay >= 2499) return 250;
+  return 0;
+}
+
+// For debugging, you can log the current state of the component
+
+function printGiftValue( pick: Picked, list: Magazine[], totalPay: number): number {
+  let threeYearGift = 0;
+  let outlookIndiaGift = 0;
+  for (const m of list) {
+    const sel = pick[m.key];
+    if (!sel?.checked) continue;
+    const editionValue = `${m.edition}${sel.duration}`; // e.g. "print3"
+    const key = `${m.key}_${editionValue}`;            // e.g. "oli-print_print3"
+    // Rule 1a: 3-year print editions of ii-print / olt-print / ob-print
+    // console.log("editionValue: ", editionValue)
+    if (editionValue.includes("print3")) {
+      if (["olm-print", "olt-print", "olb-print"].includes(m.key)) {
+        threeYearGift += 250;
+      }
+    }
+    // console.log("KEY: ", key)
+    // Rule 1b: exact key-based additions
+    if (key === "olh-print_print1") threeYearGift += 0;
+    if (key === "olh-print_print2") threeYearGift += 0;
+    if (key === "olh-print_print3") threeYearGift += 150;
+    if (key === "oli-print_print1") threeYearGift += 150;
+    if (key === "oli-print_print2") threeYearGift += 300;
+    if (key === "oli-print_print3") threeYearGift += 500;
+    // Rule 2: Outlook India (commented out in PHP — keeping placeholder)
+    if (m.key === "oli-print") {
+      // if (totalPay >= 1799 && totalPay < 3399) outlookIndiaGift = Math.max(outlookIndiaGift, 150);
+      // else if (totalPay >= 3399 && totalPay < 4899) outlookIndiaGift = Math.max(outlookIndiaGift, 300);
+      // else if (totalPay >= 4899) outlookIndiaGift = Math.max(outlookIndiaGift, 500);
+    }
+  }
+  // Rule 3: tiered value-offer gift
+  let valueOfferGift = 0;
+  if (totalPay >= 9999) valueOfferGift = 1000;
+  else if (totalPay >= 7499) valueOfferGift = 750;
+  else if (totalPay >= 4999) valueOfferGift = 500;
+  return Math.max(threeYearGift, outlookIndiaGift, valueOfferGift);
+}
+
 
 function BundleSubscription() {
   const navigate = useNavigate();
@@ -116,7 +163,7 @@ function BundleSubscription() {
         mrp: p.totalMRP,
         pay: p.offerPrice,
         save: p.totalMRP - p.offerPrice,
-        benefit: `Free Shopping Voucher worth Rs. ${p.gift.toLocaleString("en-IN")}`,
+        benefit: `Amazon Shopping Voucher worth Rs. ${p.gift.toLocaleString("en-IN")}`,
       };
     }
     const items: string[] = [];
@@ -136,7 +183,21 @@ function BundleSubscription() {
       );
     }
     if (!items.length) return null;
-    return { items, mrp, pay, save: Math.max(mrp - pay, 0), benefit: "None" };
+      // --- Member-only benefit calculation ---
+      let benefit = "None";
+      if (tab === "digital") {
+        const giftValue = digitalGiftValue(pay);
+        if (giftValue > 0) {
+          benefit = `Amazon Shopping Voucher worth Rs. ${giftValue.toLocaleString("en-IN")}`;
+        }
+      } else if (tab === "print") {
+        const giftValue = printGiftValue(pick, list, pay);
+        if (giftValue > 0) {
+          benefit = `Amazon Shopping Voucher worth Rs. ${giftValue.toLocaleString("en-IN")}`;
+        }
+      } 
+
+    return { items, mrp, pay, save: Math.max(mrp - pay, 0), benefit };
   }, [tab, plan, limitedSelected, list, pick]);
 
   function proceed() {
@@ -205,12 +266,12 @@ function BundleSubscription() {
           </div>
         </div>
 
-        <header className="ol-header">
+        {/* <header className="ol-header">
           <h1>Subscription for Domestic Readers</h1>
           <p className="subtitle">
             Select your favorite magazines and enjoy delivery through Registered Post
           </p>
-        </header>
+        </header> */}
 
         <div className="subscription-tabs">
           {(
@@ -261,7 +322,14 @@ function BundleSubscription() {
                 </label>
               ))}
             </div>
-            <div className="magazine-list">
+             
+            <div
+              className={`magazine-list ${
+                Object.keys(RATE_CARD[plan].magazines).length === 3
+                  ? "magazine-list--three"
+                  : ""
+              }`}
+            >
               {Object.entries(RATE_CARD[plan].magazines).map(([code, m]) => (
                 <div
                   key={code}

@@ -16,6 +16,7 @@ import { Route as OrderFormRouteImport } from './routes/order-form'
 import { Route as OrderFormInternationalRouteImport } from './routes/order-form-international'
 import { Route as PaymentRouteImport } from './routes/payment'
 import { Route as PaymentResponseRouteImport } from './routes/payment-response'
+import { Route as ApiGeoRouteImport } from './routes/api/geo'
 import { Route as ApiMagCoversRouteImport } from './routes/api/mag-covers'
 
 const IndexRoute = IndexRouteImport.update({
@@ -54,6 +55,11 @@ const PaymentResponseRoute = PaymentResponseRouteImport.update({
   path: '/payment-response',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiGeoRoute = ApiGeoRouteImport.update({
+  id: '/api/geo',
+  path: '/api/geo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMagCoversRoute = ApiMagCoversRouteImport.update({
   id: '/api/mag-covers',
   path: '/api/mag-covers',
@@ -68,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/order-form-international': typeof OrderFormInternationalRoute
   '/payment': typeof PaymentRoute
   '/payment-response': typeof PaymentResponseRoute
+  '/api/geo': typeof ApiGeoRoute
   '/api/mag-covers': typeof ApiMagCoversRoute
 }
 export interface FileRoutesByTo {
@@ -78,6 +85,7 @@ export interface FileRoutesByTo {
   '/order-form-international': typeof OrderFormInternationalRoute
   '/payment': typeof PaymentRoute
   '/payment-response': typeof PaymentResponseRoute
+  '/api/geo': typeof ApiGeoRoute
   '/api/mag-covers': typeof ApiMagCoversRoute
 }
 export interface FileRoutesById {
@@ -89,6 +97,7 @@ export interface FileRoutesById {
   '/order-form-international': typeof OrderFormInternationalRoute
   '/payment': typeof PaymentRoute
   '/payment-response': typeof PaymentResponseRoute
+  '/api/geo': typeof ApiGeoRoute
   '/api/mag-covers': typeof ApiMagCoversRoute
 }
 export interface FileRouteTypes {
@@ -101,6 +110,7 @@ export interface FileRouteTypes {
     | '/order-form-international'
     | '/payment'
     | '/payment-response'
+    | '/api/geo'
     | '/api/mag-covers'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
     | '/order-form-international'
     | '/payment'
     | '/payment-response'
+    | '/api/geo'
     | '/api/mag-covers'
   id:
     | '__root__'
@@ -121,6 +132,7 @@ export interface FileRouteTypes {
     | '/order-form-international'
     | '/payment'
     | '/payment-response'
+    | '/api/geo'
     | '/api/mag-covers'
   fileRoutesById: FileRoutesById
 }
@@ -132,6 +144,7 @@ export interface RootRouteChildren {
   OrderFormInternationalRoute: typeof OrderFormInternationalRoute
   PaymentRoute: typeof PaymentRoute
   PaymentResponseRoute: typeof PaymentResponseRoute
+  ApiGeoRoute: typeof ApiGeoRoute
   ApiMagCoversRoute: typeof ApiMagCoversRoute
 }
 
@@ -186,6 +199,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PaymentResponseRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/geo': {
+      id: '/api/geo'
+      path: '/api/geo'
+      fullPath: '/api/geo'
+      preLoaderRoute: typeof ApiGeoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/mag-covers': {
       id: '/api/mag-covers'
       path: '/api/mag-covers'
@@ -204,6 +224,7 @@ const rootRouteChildren: RootRouteChildren = {
   OrderFormInternationalRoute: OrderFormInternationalRoute,
   PaymentRoute: PaymentRoute,
   PaymentResponseRoute: PaymentResponseRoute,
+  ApiGeoRoute: ApiGeoRoute,
   ApiMagCoversRoute: ApiMagCoversRoute,
 }
 export const routeTree = rootRouteImport

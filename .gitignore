@@ -177,6 +177,8 @@ dist-ssr
 *.sw?
 OLD/
 OLD
+php
+php/
 src/routes/16-9-26-bundle-subscription.tsx
 src/routes/17-9-26-international-subscription.tsx
 src/lib/17-9-26-subscription-data.ts

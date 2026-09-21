@@ -34,6 +34,8 @@ export type Banners = {
 export type MagazineAssets = {
   MAG_IMG: MagCovers;
   BANNERS: Banners;
+
+  INTL_MAGAZINES: IntlMagazine[];
 };
 
 /** Fallback covers — used before the fetch resolves, or if it fails. */
@@ -55,26 +57,27 @@ export const BANNERS_FALLBACK: Banners = {
   digitalMobile: "https://img-2.outlookindia.com/outlookindia/banners/2026/05/11/m-800-10673.jpg",
 };
 
-export async function fetchMagazineAssets2222(): Promise<MagazineAssets> {
-  const bucket = Math.floor(Date.now() / (60 * 60 * 1000));
-  const url = `${MAG_COVERS_URL}?t=${bucket}`;
-  //console.log("Fetching magazine assets from:", url);
-  try {
-    const res = await fetch(url, {
-      cache: "no-store",
-    });
-    console.log ("HTTP response status:", res.status, res.statusText);
-    //if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = (await res.json()) as Partial<MagazineAssets>;
-    console.log("Data fetched from:", JSON.stringify(data, null, 2));
-    return {
-      MAG_IMG: { ...MAG_IMG_FALLBACK, ...(data.MAG_IMG ?? {}) },
-      BANNERS: { ...BANNERS_FALLBACK, ...(data.BANNERS ?? {}) },
-    };
-  } catch {
-    return { MAG_IMG: MAG_IMG_FALLBACK, BANNERS: BANNERS_FALLBACK };
-  }
-}
+// export async function fetchMagazineAssets2222(): Promise<MagazineAssets> {
+//   const bucket = Math.floor(Date.now() / (60 * 60 * 1000));
+//   const url = `${MAG_COVERS_URL}?t=${bucket}`;
+//   //console.log("Fetching magazine assets from:", url);
+//   try {
+//     const res = await fetch(url, {
+//       cache: "no-store",
+//     });
+//     console.log ("HTTP response status:", res.status, res.statusText);
+//     //if (!res.ok) throw new Error(`HTTP ${res.status}`);
+//     const data = (await res.json()) as Partial<MagazineAssets>;
+//     console.log("Data fetched from:", JSON.stringify(data, null, 2));
+//     return {
+//       MAG_IMG: { ...MAG_IMG_FALLBACK, ...(data.MAG_IMG ?? {}) },
+//       BANNERS: { ...BANNERS_FALLBACK, ...(data.BANNERS ?? {}) },
+//     };
+//   } catch {
+//     return { MAG_IMG: MAG_IMG_FALLBACK, BANNERS: BANNERS_FALLBACK };
+//   }
+// }
+
 export async function fetchMagazineAssets(): Promise<MagazineAssets> {
   try {
     const res = await fetch(MAG_COVERS_URL, { cache: "no-store" });
@@ -83,10 +86,11 @@ export async function fetchMagazineAssets(): Promise<MagazineAssets> {
     return {
       MAG_IMG: { ...MAG_IMG_FALLBACK, ...(data.MAG_IMG ?? {}) },
       BANNERS: { ...BANNERS_FALLBACK, ...(data.BANNERS ?? {}) },
+      INTL_MAGAZINES: data.INTL_MAGAZINES?.length ? data.INTL_MAGAZINES : INTL_MAGAZINES_FALLBACK,
     };
   } catch (err) {
     console.error("[fetchMagazineAssets] falling back:", err);
-    return { MAG_IMG: MAG_IMG_FALLBACK, BANNERS: BANNERS_FALLBACK };
+    return { MAG_IMG: MAG_IMG_FALLBACK, BANNERS: BANNERS_FALLBACK,       INTL_MAGAZINES: INTL_MAGAZINES_FALLBACK };
   }
 }
 
@@ -133,8 +137,9 @@ export const PRINT_MAGAZINES: Magazine[] = [
     details: "Weekly news magazine",
     edition: "print",
     options: [
-      { duration: 1, mrp: 1500, price: 899 },
-      { duration: 2, mrp: 3000, price: 1599 },
+      { duration: 1, mrp: 2600, price: 1799 },
+      { duration: 2, mrp: 5200, price: 3399 },
+      { duration: 3, mrp: 7800, price: 4899 },
     ],
   },
   {
@@ -144,8 +149,9 @@ export const PRINT_MAGAZINES: Magazine[] = [
     details: "Personal finance monthly",
     edition: "print",
     options: [
-      { duration: 1, mrp: 1200, price: 699 },
-      { duration: 2, mrp: 2400, price: 1299 },
+      { duration: 1, mrp: 960, price: 799 },
+      { duration: 2, mrp: 1920, price: 1549 },
+      { duration: 3, mrp: 2880, price: 2199 },
     ],
   },
   {
@@ -155,8 +161,9 @@ export const PRINT_MAGAZINES: Magazine[] = [
     details: "Travel monthly",
     edition: "print",
     options: [
-      { duration: 1, mrp: 1000, price: 599 },
-      { duration: 2, mrp: 2000, price: 1099 },
+      { duration: 1, mrp: 900, price: 725 },
+      { duration: 2, mrp: 1800, price: 1400 },
+      { duration: 3, mrp: 2700, price: 2100 },
     ],
   },
   {
@@ -166,8 +173,9 @@ export const PRINT_MAGAZINES: Magazine[] = [
     details: "Business fortnightly",
     edition: "print",
     options: [
-      { duration: 1, mrp: 1200, price: 699 },
-      { duration: 2, mrp: 2400, price: 1299 },
+      { duration: 1, mrp: 1200, price: 999 },
+      { duration: 2, mrp: 2400, price: 1899 },
+      { duration: 3, mrp: 3600, price: 2599 },
     ],
   },
   {
@@ -177,8 +185,9 @@ export const PRINT_MAGAZINES: Magazine[] = [
     details: "Weekly Hindi news magazine",
     edition: "print",
     options: [
-      { duration: 1, mrp: 1100, price: 649 },
-      { duration: 2, mrp: 2200, price: 1199 },
+      { duration: 1, mrp: 600, price: 499 },
+      { duration: 2, mrp: 1200, price: 999 },
+      { duration: 3, mrp: 1800, price: 1399 },
     ],
   },
 ];
@@ -192,8 +201,8 @@ export const DIGITAL_MAGAZINES: Magazine[] = [
     details: "Weekly news magazine — e-mag",
     edition: "digital",
     options: [
-      { duration: 1, mrp: 900, price: 499 },
-      { duration: 2, mrp: 1800, price: 899 },
+      { duration: 1, mrp: 2600, price: 1699 },
+      { duration: 2, mrp: 5200, price: 3099 }, 
     ],
   },
   {
@@ -203,8 +212,8 @@ export const DIGITAL_MAGAZINES: Magazine[] = [
     details: "Personal finance monthly — e-mag",
     edition: "digital",
     options: [
-      { duration: 1, mrp: 700, price: 399 },
-      { duration: 2, mrp: 1400, price: 699 },
+      { duration: 1, mrp: 960, price: 699 },
+      { duration: 2, mrp: 1920, price: 1199 },
     ],
   },
   {
@@ -214,8 +223,8 @@ export const DIGITAL_MAGAZINES: Magazine[] = [
     details: "Travel monthly — e-mag",
     edition: "digital",
     options: [
-      { duration: 1, mrp: 600, price: 349 },
-      { duration: 2, mrp: 1200, price: 599 },
+      { duration: 1, mrp: 900, price: 599 },
+      { duration: 2, mrp: 1800, price: 1099 },
     ],
   },
   {
@@ -225,8 +234,8 @@ export const DIGITAL_MAGAZINES: Magazine[] = [
     details: "Business fortnightly — e-mag",
     edition: "digital",
     options: [
-      { duration: 1, mrp: 700, price: 399 },
-      { duration: 2, mrp: 1400, price: 699 },
+      { duration: 1, mrp: 1200, price: 849 },
+      { duration: 2, mrp: 2400, price: 1549 },
     ],
   },
   {
@@ -236,8 +245,8 @@ export const DIGITAL_MAGAZINES: Magazine[] = [
     details: "Weekly Hindi news — e-mag",
     edition: "digital",
     options: [
-      { duration: 1, mrp: 650, price: 379 },
-      { duration: 2, mrp: 1300, price: 659 },
+      { duration: 1, mrp: 600, price: 449 },
+      { duration: 2, mrp: 1200, price: 899 },
     ],
   },
 ];
@@ -246,7 +255,7 @@ export const DIGITAL_MAGAZINES: Magazine[] = [
 /*  Combo (limited offer) rate card                                   */
 /* ------------------------------------------------------------------ */
 
-export type PlanKey = "gold" | "silver";
+export type PlanKey = "gold" | "silver" | "star";
 
 export type RatePlan = {
   label: string;
@@ -265,27 +274,45 @@ export const RATE_CARD: Record<PlanKey, RatePlan> = {
     label: "Gold Combo",
     duration: "2 Years",
     durCode: "2yr",
-    totalMRP: 6000,
-    offerPrice: 2999,
-    save: 3001,
+    totalMRP: 22640,
+    offerPrice: 9999,
+    save: 12641,
     gift: 1500,
     magazines: {
       OLI: { name: "Outlook India" },
       OLM: { name: "Outlook Money" },
       OLT: { name: "Outlook Traveller" },
+      OLB: { name: "Outlook Business" },
     },
   },
   silver: {
     label: "Silver Combo",
     duration: "1 Year",
     durCode: "1yr",
-    totalMRP: 3000,
-    offerPrice: 1599,
-    save: 1401,
-    gift: 750,
+    totalMRP: 11320,
+    offerPrice: 5999,
+    save: 5321,
+    gift: 500,
     magazines: {
       OLI: { name: "Outlook India" },
       OLM: { name: "Outlook Money" },
+      OLT: { name: "Outlook Traveller" },
+      OLB: { name: "Outlook Business" },
+    },
+  },
+  star: {
+    label: "Star Combo",
+    duration: "9 Months",
+    durCode: "9M",
+    totalMRP: 3420,
+    offerPrice: 2999,
+    save: 421,
+    gift: 250,
+    magazines: {
+      OLI: { name: "Outlook India" },
+      OLM: { name: "Outlook Money" },
+      //OLT: { name: "Outlook Traveller" },
+      OLB: { name: "Outlook Business" },
     },
   },
 };
@@ -301,19 +328,20 @@ export type IntlMagazine = {
   details: string;
   /** Base INR prices. */
   print1: number;
+   print2: number;
   digital1: number;
-  digital2: number;
+  //digital2: number;
 };
 
-export const INTL_MAGAZINES: IntlMagazine[] = [
+export const INTL_MAGAZINES_FALLBACK: IntlMagazine[] = [
   {
     key: "oli",
     code: "OLI",
     name: "Outlook India",
     details: "Weekly news magazine",
-    print1: 4500,
-    digital1: 1999,
-    digital2: 3499,
+    print1: 11000,
+    digital1: 2600,
+    print2: 5200,
   },
   {
     key: "olm",
@@ -321,35 +349,38 @@ export const INTL_MAGAZINES: IntlMagazine[] = [
     name: "Outlook Money",
     details: "Personal finance monthly",
     print1: 3500,
-    digital1: 1499,
-    digital2: 2599,
+    print2: 960,
+    digital1: 1920,
+    //digital2: 2599,
   },
   {
     key: "olt",
     code: "OLT",
     name: "Outlook Traveller",
     details: "Travel monthly",
-    print1: 3500,
-    digital1: 1499,
-    digital2: 2599,
+    print1: 2850,
+    print2: 900,
+    digital1: 1800,
+    //digital2: 2599,
   },
   {
     key: "olb",
     code: "OLB",
     name: "Outlook Business",
     details: "Business fortnightly",
-    print1: 3500,
-    digital1: 1499,
-    digital2: 2599,
+    print1: 5200,
+    print2: 1200,
+    digital1: 2400,
+    //digital2: 2599,
   },
   {
     key: "olh",
     code: "OLH",
     name: "Outlook Hindi",
     details: "Weekly Hindi news magazine",
-    print1: 3000,
-    digital1: 1299,
-    digital2: 2299,
+    print1: 5000,
+    print2: 600,
+    digital1: 1200,
   },
 ];
 
@@ -416,8 +447,105 @@ export function convertWithRates(
 ): number {
   const rate = rates[currency] ?? 1;
   const converted = amountINR * rate;
-  // Round to 2 decimals for display.
   return Math.round(converted * 100) / 100;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Geo detection (user's country + native currency)                  */
+/* ------------------------------------------------------------------ */
+
+export type GeoCurrency = {
+  code: string;
+  symbol: string;
+};
+
+export type GeoResult = {
+  country_code: string | null;
+  country_name: string | null;
+  currency: GeoCurrency | null;
+};
+
+/**
+ * Detects the user's native currency via our own /api/geo proxy.
+ * The API key stays server-side. Returns null currency on any failure.
+ */
+export async function fetchGeoCurrency(): Promise<GeoResult> {
+  try {
+    const res = await fetch("/api/geo", { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = (await res.json()) as {
+      country_code: string | null;
+      country_name: string | null;
+      currency_code: string | null;
+      currency_symbol: string | null;
+    };
+    return {
+      country_code: data.country_code,
+      country_name: data.country_name,
+      currency:
+        data.currency_code && data.currency_symbol
+          ? { code: data.currency_code, symbol: data.currency_symbol }
+          : null,
+    };
+  } catch (err) {
+    console.error("[fetchGeoCurrency] falling back:", err);
+    return { country_code: null, country_name: null, currency: null };
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Currency option builder for the international checkout            */
+/* ------------------------------------------------------------------ */
+
+export type CurrencyOption = {
+  code: string;
+  symbol: string;
+  locale: string;
+};
+
+/**
+ * Returns the currencies to show in the international dropdown:
+ *   - [native, INR] if the native currency has a live rate
+ *   - [INR] otherwise
+ */
+export function buildCurrencyOptions(
+  native: GeoCurrency | null,
+  rates: Record<string, number>,
+): CurrencyOption[] {
+  const inr: CurrencyOption = { code: "INR", symbol: "₹", locale: "en-IN" };
+
+  if (!native || native.code === "INR") return [inr];
+
+  const rate = rates[native.code];
+  if (typeof rate !== "number" || rate <= 0) return [inr];
+
+  const locale = SUPPORTED_CURRENCIES[native.code]?.locale ?? "en-US";
+  return [{ code: native.code, symbol: native.symbol, locale }, inr];
+}
+
+/* ------------------------------------------------------------------ */
+/*  Amount formatting                                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Formats an amount for display.
+ *   - 3-letter codes (AED, SAR) → "AED 494.47"
+ *   - Symbol currencies (₹, $) → "₹12,920"
+ *   - INR = 0 decimals; others = up to 2 decimals.
+ */
+export function formatCurrencyAmount(
+  amount: number,
+  code: string,
+  symbol: string,
+  locale = "en-US",
+): string {
+  const needsSpace = /^[A-Z]{3}$/.test(symbol.trim());
+  const isINR = code === "INR";
+  const value = amount.toLocaleString(locale, {
+    minimumFractionDigits: isINR ? 0 : 2,
+    maximumFractionDigits: isINR ? 0 : 2,
+  });
+  return needsSpace ? `${symbol.trim()} ${value}` : `${symbol}${value}`;
 }
 
 

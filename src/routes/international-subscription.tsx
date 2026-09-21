@@ -1,27 +1,21 @@
-/**
- * Requires from "@/lib/subscription-data":
- *   INTL_MAGAZINES, SUPPORTED_CURRENCIES,
- *   MAG_IMG_FALLBACK, BANNERS_FALLBACK,
- *   coverKeyForCode(code) -> "oli" | "olm" | "olt" | "olb" | "olh",
- *   fetchMagazineAssets() -> Promise<{ MAG_IMG: MagCovers; BANNERS: Banners }>,
- *   fetchExchangeRates() -> Promise<Record<string, number>>,
- *   convertWithRates(amountINR, currency, rates) -> number
- * Types: MagCovers, Banners
- */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
 import { SiteHeader } from "@/components/SiteHeader";
 import {
   BANNERS_FALLBACK,
-  INTL_MAGAZINES,
+  INTL_MAGAZINES_FALLBACK,
   MAG_IMG_FALLBACK,
-  SUPPORTED_CURRENCIES,
+  buildCurrencyOptions,
   convertWithRates,
   coverKeyForCode,
   fetchExchangeRates,
+  fetchGeoCurrency,
   fetchMagazineAssets,
+  formatCurrencyAmount,
   type Banners,
+  type GeoCurrency,
+  type IntlMagazine,
   type MagCovers,
 } from "@/lib/subscription-data";
 
@@ -58,9 +52,9 @@ type MagazineSelection = {
 
 type Picked = Record<string, MagazineSelection>;
 
-function initPicked(): Picked {
+function initPicked(list: IntlMagazine[]): Picked {
   const out: Picked = {};
-  for (const m of INTL_MAGAZINES) {
+  for (const m of list) {
     out[m.key] = { duration: 0, editions: [] };
   }
   return out;
@@ -68,68 +62,110 @@ function initPicked(): Picked {
 
 function InternationalSubscription() {
   const navigate = useNavigate();
-  const [currency, setCurrency] = useState("USD");
-  const [picked, setPicked] = useState<Picked>(() => initPicked());
+
+  /* ------------------------------------------------------------------
+     Remote data: covers, banners, magazine list, rates, geo currency.
+     ------------------------------------------------------------------ */
+  const [covers, setCovers] = useState<MagCovers>(MAG_IMG_FALLBACK);
+  const [banners, setBanners] = useState<Banners>(BANNERS_FALLBACK);
+  const [intlMagazines, setIntlMagazines] = useState<IntlMagazine[]>(
+    INTL_MAGAZINES_FALLBACK,
+  );
+  const [rates, setRates] = useState<Record<string, number>>({ INR: 1 });
+  const [ratesLoaded, setRatesLoaded] = useState(false);
+  const [nativeCurrency, setNativeCurrency] = useState<GeoCurrency | null>(null);
+
+  /** User's picked display currency. Defaults to INR until geo resolves. */
+  const [currency, setCurrency] = useState("INR");
+
+  const [picked, setPicked] = useState<Picked>(() =>
+    initPicked(INTL_MAGAZINES_FALLBACK),
+  );
+
   const [error, setError] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
 
-  const [rates, setRates] = useState<Record<string, number>>({ INR: 1 });
-  const [ratesLoaded, setRatesLoaded] = useState(false);
-
-  const [covers, setCovers] = useState<MagCovers>(MAG_IMG_FALLBACK);
-  const [banners, setBanners] = useState<Banners>(BANNERS_FALLBACK);
-
+  /* ------------------------- Initial fetch ------------------------- */
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [r, assets] = await Promise.all([
+      const [r, assets, geo] = await Promise.all([
         fetchExchangeRates(),
         fetchMagazineAssets(),
+        fetchGeoCurrency(),
       ]);
       if (cancelled) return;
+
       setRates(r);
       setCovers(assets.MAG_IMG);
       setBanners(assets.BANNERS);
+      setIntlMagazines(assets.INTL_MAGAZINES);
+      setNativeCurrency(geo.currency);
       setRatesLoaded(true);
+
+      // Default to the user's native currency if we support it,
+      // otherwise stay on INR.
+      if (geo.currency && geo.currency.code !== "INR" && r[geo?.currency.code] > 0) {
+        setCurrency(geo.currency.code);
+      }
     })();
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const symbol = SUPPORTED_CURRENCIES[currency]!.symbol;
-  const locale = SUPPORTED_CURRENCIES[currency]!.locale;
+  /* Re-seed picked map when remote magazines arrive. */
+  useEffect(() => {
+    setPicked(initPicked(intlMagazines));
+  }, [intlMagazines]);
 
-  const basePriceOf = (
-    mag: (typeof INTL_MAGAZINES)[number],
-    edition: EditionCode,
-  ): number => {
+  /* ------------------------ Currency options ----------------------- */
+  const currencyOptions = useMemo(
+    () => buildCurrencyOptions(nativeCurrency, rates),
+    [nativeCurrency, rates],
+  );
+
+  const current = currencyOptions.find((c) => c.code === currency) ?? currencyOptions[0]!;
+  const symbol = current.symbol;
+  const locale = current.locale;
+
+  /* --------------------------- Pricing ----------------------------- */
+  const basePriceOf = (mag: IntlMagazine, edition: EditionCode): number => {
     if (edition === "1P") return mag.print1;
     if (edition === "1D") return mag.digital1;
-    return mag.digital2;
+    return mag.print2;
   };
 
-  const priceOf = (
-    mag: (typeof INTL_MAGAZINES)[number],
-    edition: EditionCode,
-  ) => convertWithRates(basePriceOf(mag, edition), currency, rates);
+  const convertedPriceOf = (mag: IntlMagazine, edition: EditionCode) =>
+    convertWithRates(basePriceOf(mag, edition), currency, rates);
 
-  const magazineTotal = (mag: (typeof INTL_MAGAZINES)[number]) => {
+  const magazineInrTotal = (mag: IntlMagazine) => {
     const sel = picked[mag.key];
     if (!sel) return 0;
-    return sel.editions.reduce((sum, e) => sum + priceOf(mag, e), 0);
+    return sel.editions.reduce((sum, e) => sum + basePriceOf(mag, e), 0);
   };
 
+  const magazineConvertedTotal = (mag: IntlMagazine) => {
+    const sel = picked[mag.key];
+    if (!sel) return 0;
+    return sel.editions.reduce((sum, e) => sum + convertedPriceOf(mag, e), 0);
+  };
+
+  /* ------------------------- Order summary ------------------------- */
   const summary = useMemo(() => {
     const items: string[] = [];
-    let total = 0;
-    for (const mag of INTL_MAGAZINES) {
+    let inrTotal = 0;
+    let convertedTotal = 0;
+
+    for (const mag of intlMagazines) {
       const sel = picked[mag.key];
       if (!sel || !sel.duration || sel.editions.length === 0) continue;
 
       for (const ed of sel.editions) {
-        const price = priceOf(mag, ed);
-        total += price;
+        const inr = basePriceOf(mag, ed);
+        const conv = convertedPriceOf(mag, ed);
+        inrTotal += inr;
+        convertedTotal += conv;
 
         const label =
           ed === "1P"
@@ -138,13 +174,18 @@ function InternationalSubscription() {
               ? "1 Year - Digital Edition"
               : "2 Years - Digital Edition";
 
-        items.push(`${mag.name} - ${label} at ${symbol}${price}`);
+        items.push(
+          `${mag.name} - ${label} at ${formatCurrencyAmount(conv, currency, symbol, locale)} (₹${inr})`,
+        );
       }
     }
-    return items.length ? { items, total } : null;
+    return items.length
+      ? { items, inrTotal, convertedTotal }
+      : null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [picked, currency, rates]);
+  }, [picked, currency, rates, intlMagazines, symbol, locale]);
 
+  /* -------------------------- Interactions ------------------------- */
   function setDuration(magKey: string, value: string) {
     const duration = (value === "1" ? 1 : value === "2" ? 2 : 0) as Duration | 0;
     setError(false);
@@ -165,20 +206,21 @@ function InternationalSubscription() {
 
     setError(false);
     setPicked((prev) => {
-      const current = prev[magKey]!;
-      const has = current.editions.includes(edition);
+      const cur = prev[magKey]!;
+      const has = cur.editions.includes(edition);
       return {
         ...prev,
         [magKey]: {
-          ...current,
+          ...cur,
           editions: has
-            ? current.editions.filter((e) => e !== edition)
-            : [...current.editions, edition],
+            ? cur.editions.filter((e) => e !== edition)
+            : [...cur.editions, edition],
         },
       };
     });
   }
 
+  /* --------------------------- Checkout ---------------------------- */
   function proceed() {
     if (!summary) {
       setError(true);
@@ -186,52 +228,53 @@ function InternationalSubscription() {
     }
     setError(false);
 
-    const magSelect = INTL_MAGAZINES.filter(
-      (m) => picked[m.key]?.editions.length,
-    )
+    const magSelect = intlMagazines
+      .filter((m) => picked[m.key]?.editions.length)
       .flatMap((m) =>
         picked[m.key]!.editions.map((ed) => `${m.code}-${ed}`),
       )
       .join(", ");
 
-    const anyTwoYear = INTL_MAGAZINES.some(
+    const anyTwoYear = intlMagazines.some(
       (m) => picked[m.key]?.duration === 2 && picked[m.key]!.editions.length > 0,
     );
-    const anyOneYear = INTL_MAGAZINES.some(
+    const anyOneYear = intlMagazines.some(
       (m) => picked[m.key]?.duration === 1 && picked[m.key]!.editions.length > 0,
     );
     const dura = anyTwoYear && !anyOneYear ? "2yr" : "1yr";
 
     saveDraft({
       scope: "international",
-      amt: summary.total,
+      // Gateway charges in INR — always store the INR amount here.
+      amt: summary.inrTotal,
       dura,
       gift: "",
       mag: "OL-TEO-KJ-INT",
       magSelect,
       selectionList: summary.items,
       currency: "INR",
-      toCurrency: currency,
-      currencySymbol: symbol,
-      languagesSymbol: locale,
+      toCurrency: "INR",           // charge INR
+      currencySymbol: "₹",         // gateway + payment page use ₹
+      languagesSymbol: "en-IN",
       magazineCode: "15",
       subscriptionType: "international",
     });
     navigate({ to: "/order-form-international" });
   }
 
+  /* ------------------------------ UI ------------------------------- */
   return (
     <div className="ol-page">
       <SiteHeader />
       <div className="ol-container">
-        <div className="banner-container1">
+        {/* <div className="banner-container1">
           <div className="subdsk-img">
             <img src={banners.digitalDesktop} alt="Outlook international subscription" />
           </div>
           <div className="submob-img">
             <img src={banners.digitalMobile} alt="Outlook international subscription" />
           </div>
-        </div>
+        </div> */}
 
         <header className="ol-header">
           <h1>Subscription for International Readers</h1>
@@ -249,9 +292,9 @@ function InternationalSubscription() {
               onChange={(e) => setCurrency(e.target.value)}
               style={{ margin: 0, width: "auto" }}
             >
-              {Object.keys(SUPPORTED_CURRENCIES).map((c) => (
-                <option key={c} value={c}>
-                  {c}
+              {currencyOptions.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code}
                 </option>
               ))}
             </select>
@@ -267,12 +310,12 @@ function InternationalSubscription() {
           )}
         </div>
 
-        <p className="scroll-hint">
+        <p className="scroll-hint text-center text-sm text-gray-500 mt-4 lg:hidden scroll-hint">
           <strong>&larr; Scroll horizontally &rarr;</strong>
         </p>
 
         <div className="magazine-grid">
-          {INTL_MAGAZINES.map((mag) => {
+          {intlMagazines.map((mag) => {
             const sel = picked[mag.key]!;
             const durationSelected = sel.duration !== 0;
             const isOneYear = sel.duration === 1;
@@ -283,6 +326,9 @@ function InternationalSubscription() {
             const show1P = !durationSelected || isOneYear;
             const show1D = !durationSelected || isOneYear;
             const show2D = isTwoYear;
+
+            const inrTotal = magazineInrTotal(mag);
+            const convTotal = magazineConvertedTotal(mag);
 
             return (
               <div
@@ -319,10 +365,9 @@ function InternationalSubscription() {
                 </select>
 
                 <div className="edition-options">
+                  {/* PRINT EDITION (1 Year) */}
                   <label
-                    className={`edition-option ${
-                      show1P ? "" : "edition-option--hidden"
-                    }`}
+                    className={`edition-option ${show1P ? "" : "edition-option--hidden"}`}
                     onClick={(ev) => {
                       if (!durationSelected) {
                         ev.preventDefault();
@@ -338,18 +383,24 @@ function InternationalSubscription() {
                       onChange={() => toggleEdition(mag.key, "1P")}
                     />
                     <span className="edition-label">
-                      {!durationSelected ? "Print Edition" : "Print Edition (1 Year)"}
+                      {!durationSelected ? "Print Edition" : "Print Edition"}
                     </span>
                     <span className="edition-price">
-                      {symbol}
-                      {priceOf(mag, "1P")}
+                      {formatCurrencyAmount(
+                        convertedPriceOf(mag, "1P"),
+                        currency,
+                        symbol,
+                        locale,
+                      )}
+                      <small className="edition-base">
+                        {" "}(₹{mag.print1 })
+                      </small>
                     </span>
                   </label>
 
+                  {/* E-MAG EDITION (1 Year) */}
                   <label
-                    className={`edition-option ${
-                      show1D ? "" : "edition-option--hidden"
-                    }`}
+                    className={`edition-option ${show1D ? "" : "edition-option--hidden"}`}
                     onClick={(ev) => {
                       if (!durationSelected) {
                         ev.preventDefault();
@@ -365,35 +416,50 @@ function InternationalSubscription() {
                       onChange={() => toggleEdition(mag.key, "1D")}
                     />
                     <span className="edition-label">
-                      {!durationSelected ? "e-Mag Edition" : "e-Mag Edition (1 Year)"}
+                      {!durationSelected ? "e-Mag Edition" : "e-Mag Edition"}
                     </span>
                     <span className="edition-price">
-                      {symbol}
-                      {priceOf(mag, "1D")}
+                      {formatCurrencyAmount(
+                        convertedPriceOf(mag, "1D"),
+                        currency,
+                        symbol,
+                        locale,
+                      )}
+                      <small className="edition-base">
+                        {" "}(₹{mag.digital1 })
+                      </small>
                     </span>
                   </label>
 
-                  <label
-                    className={`edition-option ${
-                      show2D ? "" : "edition-option--hidden"
-                    }`}
-                  >
+                  {/* E-MAG EDITION (2 Years) */}
+                  <label className={`edition-option ${show2D ? "" : "edition-option--hidden"}`}>
                     <input
                       type="checkbox"
                       checked={sel.editions.includes("2D")}
                       onChange={() => toggleEdition(mag.key, "2D")}
                     />
-                    <span className="edition-label">e-Mag Edition (2 Years)</span>
+                    <span className="edition-label">e-Mag Edition</span>
                     <span className="edition-price">
-                      {symbol}
-                      {priceOf(mag, "2D")}
+                      {formatCurrencyAmount(
+                        convertedPriceOf(mag, "2D"),
+                        currency,
+                        symbol,
+                        locale,
+                      )}
+                      <small className="edition-base">
+                        {" "}(₹{mag.print2 })
+                      </small>
                     </span>
                   </label>
                 </div>
 
                 <div className="magazine-price">
-                  {symbol}
-                  {magazineTotal(mag)}
+                  {formatCurrencyAmount(convTotal, currency, symbol, locale)}
+                  {inrTotal > 0 && (
+                    <small className="magazine-price-inr">
+                      {" "}/ ₹{inrTotal}
+                    </small>
+                  )}
                 </div>
               </div>
             );
@@ -413,15 +479,23 @@ function InternationalSubscription() {
               <div className="empty-selection">No magazines selected yet</div>
             )}
           </div>
+
           <div className="deal-summary">
             <div className="deal-row">
               <span style={{ fontWeight: 600 }}>You Pay:</span>
               <span style={{ fontWeight: 700, color: "#d60810", fontSize: "1.2rem" }}>
-                {symbol}
-                {(summary?.total ?? 0).toLocaleString(locale)}
+                {summary
+                  ? `${formatCurrencyAmount(summary.convertedTotal, currency, symbol, locale)} / ₹${summary.inrTotal }`
+                  : `${symbol}0`}
+              </span>
+            </div>
+            <div className="deal-row">
+              <span style={{ fontSize: ".8rem", color: "#666" }}>
+                You will be charged in INR at checkout.
               </span>
             </div>
           </div>
+
           {error && (
             <div className="validation-error">
               Please select at least one magazine to continue.
