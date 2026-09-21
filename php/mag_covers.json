@@ -1,0 +1,211 @@
+{
+  "MAG_IMG": {
+    "oli": "https://kj2.outlookindia.com/assets/covers/ole-sep-26_w-655.jpg",
+    "olm": "https://kj2.outlookindia.com/assets/covers/olm-sep-26_w-655.jpg",
+    "olt": "https://kj2.outlookindia.com/assets/covers/OLTcoverAugSept2026.jpg",
+    "olb": "https://kj2.outlookindia.com/assets/covers/olb-sep-26_w-655.jpg",
+    "olh": "https://kj2.outlookindia.com/assets/covers/olh-sep-26_w-655.jpg"
+  },
+  "BANNERS": {
+    "limitedDesktop": "https://img-2.outlookindia.com/outlookindia/banners/2026/05/18/1368-365.jpg",
+    "limitedMobile": "https://img-2.outlookindia.com/outlookindia/banners/2026/03/23/370-495-SM.jpg",
+    "printDesktop": "https://img-2.outlookindia.com/outlookindia/banners/2026/05/11/d_1536-5125.jpg",
+    "printMobile": "https://img-2.outlookindia.com/outlookindia/banners/2026/05/11/m-800-10673.jpg",
+    "digitalDesktop": "https://img-2.outlookindia.com/outlookindia/banners/2026/03/23/1536-512-E.jpg",
+    "digitalMobile": "https://img-2.outlookindia.com/outlookindia/banners/2026/05/11/m-800-10673.jpg"
+  },
+
+  "PRINT_MAGAZINES": [
+    {
+      "key": "oli-print",
+      "code": "OLI",
+      "name": "Outlook India",
+      "details": "Weekly news magazine",
+      "edition": "print",
+      "options": [
+        { "duration": 1, "mrp": 1500, "price": 899 },
+        { "duration": 2, "mrp": 3000, "price": 1599 }
+      ]
+    },
+    {
+      "key": "olm-print",
+      "code": "OLM",
+      "name": "Outlook Money",
+      "details": "Personal finance monthly",
+      "edition": "print",
+      "options": [
+        { "duration": 1, "mrp": 1200, "price": 699 },
+        { "duration": 2, "mrp": 2400, "price": 1299 }
+      ]
+    },
+    {
+      "key": "olt-print",
+      "code": "OLT",
+      "name": "Outlook Traveller",
+      "details": "Travel monthly",
+      "edition": "print",
+      "options": [
+        { "duration": 1, "mrp": 1000, "price": 599 },
+        { "duration": 2, "mrp": 2000, "price": 1099 }
+      ]
+    },
+    {
+      "key": "olb-print",
+      "code": "OLB",
+      "name": "Outlook Business",
+      "details": "Business fortnightly",
+      "edition": "print",
+      "options": [
+        { "duration": 1, "mrp": 1200, "price": 699 },
+        { "duration": 2, "mrp": 2400, "price": 1299 }
+      ]
+    },
+    {
+      "key": "olh-print",
+      "code": "OLH",
+      "name": "Outlook Hindi",
+      "details": "Weekly Hindi news magazine",
+      "edition": "print",
+      "options": [
+        { "duration": 1, "mrp": 1100, "price": 649 },
+        { "duration": 2, "mrp": 2200, "price": 1199 }
+      ]
+    }
+  ],
+
+  "DIGITAL_MAGAZINES": [
+    {
+      "key": "oli-digital",
+      "code": "OLI",
+      "name": "Outlook India",
+      "details": "Weekly news magazine — e-mag",
+      "edition": "digital",
+      "options": [
+        { "duration": 1, "mrp": 900, "price": 499 },
+        { "duration": 2, "mrp": 1800, "price": 899 }
+      ]
+    },
+    {
+      "key": "olm-digital",
+      "code": "OLM",
+      "name": "Outlook Money",
+      "details": "Personal finance monthly — e-mag",
+      "edition": "digital",
+      "options": [
+        { "duration": 1, "mrp": 700, "price": 399 },
+        { "duration": 2, "mrp": 1400, "price": 699 }
+      ]
+    },
+    {
+      "key": "olt-digital",
+      "code": "OLT",
+      "name": "Outlook Traveller",
+      "details": "Travel monthly — e-mag",
+      "edition": "digital",
+      "options": [
+        { "duration": 1, "mrp": 600, "price": 349 },
+        { "duration": 2, "mrp": 1200, "price": 599 }
+      ]
+    },
+    {
+      "key": "olb-digital",
+      "code": "OLB",
+      "name": "Outlook Business",
+      "details": "Business fortnightly — e-mag",
+      "edition": "digital",
+      "options": [
+        { "duration": 1, "mrp": 700, "price": 399 },
+        { "duration": 2, "mrp": 1400, "price": 699 }
+      ]
+    },
+    {
+      "key": "olh-digital",
+      "code": "OLH",
+      "name": "Outlook Hindi",
+      "details": "Weekly Hindi news — e-mag",
+      "edition": "digital",
+      "options": [
+        { "duration": 1, "mrp": 650, "price": 379 },
+        { "duration": 2, "mrp": 1300, "price": 659 }
+      ]
+    }
+  ],
+
+  "RATE_CARD": {
+    "gold": {
+      "label": "Gold Combo",
+      "duration": "2 Years",
+      "durCode": "2yr",
+      "totalMRP": 6000,
+      "offerPrice": 2999,
+      "save": 3001,
+      "gift": 1500,
+      "magazines": {
+        "OLI": { "name": "Outlook India" },
+        "OLM": { "name": "Outlook Money" },
+        "OLT": { "name": "Outlook Traveller" }
+      }
+    },
+    "silver": {
+      "label": "Silver Combo",
+      "duration": "1 Year",
+      "durCode": "1yr",
+      "totalMRP": 3000,
+      "offerPrice": 1599,
+      "save": 1401,
+      "gift": 750,
+      "magazines": {
+        "OLI": { "name": "Outlook India" },
+        "OLM": { "name": "Outlook Money" }
+      }
+    }
+  },
+
+  "INTL_MAGAZINES": [
+    {
+      "key": "oli",
+      "code": "OLI",
+      "name": "Outlook India",
+      "details": "Weekly news magazine",
+      "print1": 11000,
+      "print2": 960,
+      "digital1": 1920
+    },
+    {
+      "key": "olm",
+      "code": "OLM",
+      "name": "Outlook Money",
+      "details": "Personal finance monthly",
+      "print1": 3500,
+      "print2": 960,
+      "digital1": 1920
+    },
+    {
+      "key": "olt",
+      "code": "OLT",
+      "name": "Outlook Traveller",
+      "details": "Travel monthly",
+      "print1": 2850,
+      "print2": 900,
+      "digital1": 1800
+    },
+    {
+      "key": "olb",
+      "code": "OLB",
+      "name": "Outlook Business",
+      "details": "Business fortnightly",
+      "print1": 5200,
+      "print2": 1200,
+      "digital1": 2400
+    },
+    {
+      "key": "olh",
+      "code": "OLH",
+      "name": "Outlook Hindi",
+      "details": "Weekly Hindi news magazine",
+      "print1": 5000,
+      "print2": 600,
+      "digital1": 1200
+    }
+  ]
+}
