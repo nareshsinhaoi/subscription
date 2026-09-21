@@ -1497,7 +1497,7 @@ li::before {
     padding: 6px 14px 4px;
   }
   .magazine-card { padding: 14px; border-radius: 14px; }
-  .magazine-image { aspect-ratio: 16 / 10; }
+  .magazine-image { aspect-ratio: 3 / 4; }
   .magazine-details { min-height: 0; font-size: 0.78rem; }
 
   .edition-option { padding: 12px; min-height: 52px; }
